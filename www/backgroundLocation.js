@@ -36,7 +36,9 @@ var backgroundLocation = {
                 desiredAccuracy,
                 debug,
                 stopOnTerminate,
-                interval
+                interval,
+                server,
+                authToken
             ]
         );
     },

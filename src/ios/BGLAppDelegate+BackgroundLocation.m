@@ -34,7 +34,7 @@
 {
     self = [super init];
     if (self) {
-         _locationTracker = [[LocationTracker alloc]init];
+         _locationTracker = [[LocationTracker alloc] init];
         [_locationTracker startLocationTracking];
     }
     return self;
@@ -63,10 +63,9 @@
     return YES;
 }
 
-- (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+- (BOOL)startPoolingLocation
 {
-    
-     UIAlertView * alert;
+    UIAlertView * alert;
     
     //We have to make sure that the Background App Refresh is enable for the Location updates to work in the background.
     if([[UIApplication sharedApplication] backgroundRefreshStatus] == UIBackgroundRefreshStatusDenied){
@@ -98,7 +97,23 @@
                                        selector:@selector(updateLocation)
                                        userInfo:nil
                                         repeats:YES];
+        
+        return YES;
     }
+    
+    return NO;
+}
+
+- (BOOL)stopPoolingLocation
+{
+    BGLAppDelegate_p* p_impl = [BGLAppDelegate_p inst];
+    [p_impl.locationUpdateTimer invalidate];
+    p_impl.locationUpdateTimer = nil;
+}
+
+- (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    [self startPoolingLocation];
     
     // Will run original implementation by new name
     return [self _application:application didFinishLaunchingWithOptions:launchOptions];

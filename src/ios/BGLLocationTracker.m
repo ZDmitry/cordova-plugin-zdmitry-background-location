@@ -292,34 +292,46 @@
 
 - (void) sendData:(NSDictionary*)dict
 {
-    bool bgMode = [UIApplication sharedApplication].applicationState == UIApplicationStateBackground;
-    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:@"http://192.168.0.28:3000/log"]];
+    UIApplication* app = [UIApplication sharedApplication];
+    UIBackgroundTaskIdentifier __block bgTask = UIBackgroundTaskInvalid;
     
-    [request setHTTPMethod:@"POST"];
-    [request setValue:@"application/json" forHTTPHeaderField:@"Content-type"];
-    // [request setValue:_authToken          forHTTPHeaderField:@"Authorization"];
-    
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
-    NSString* isoDate = [formatter stringFromDate:[NSDate date]];
-    
-    NSDictionary* jsonDict = @{
-      @"timestamp": isoDate,
-      @"mode": (bgMode ? @"BG" : @"FG"),
-      @"data": dict
-    };
-    
-    NSData* jsonData     = [NSJSONSerialization dataWithJSONObject:jsonDict options:0 error:nil];
-    NSString* jsonString = [[NSString alloc] initWithBytes:[jsonData bytes] length:[jsonData length] encoding:NSUTF8StringEncoding];
-    
-    [request setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[jsonString length]] forHTTPHeaderField:@"Content-length"];
-    [request setHTTPBody:[jsonString dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    NSURLSession *session = [NSURLSession sharedSession];
-    NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        // do something with the data
-    }];
-    [dataTask resume];
+    if ([_serverUrl hasPrefix:@"http://"] || [_serverUrl hasPrefix:@"https://"]) {
+        if (app.applicationState == UIApplicationStateBackground) {
+            bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+                [app endBackgroundTask:bgTask];
+                bgTask = UIBackgroundTaskInvalid;
+            }];
+        }
+        
+        NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:_serverUrl]];
+        
+        [request setHTTPMethod:@"POST"];
+        [request setValue:@"application/json" forHTTPHeaderField:@"Content-type"];
+        
+        if (_serverToken.length > 0) {
+            [request setValue:_serverToken forHTTPHeaderField:@"Authorization"];
+        }
+        
+        // NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        // formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
+        // NSString* isoDate = [formatter stringFromDate:[NSDate date]];
+        
+        NSData* jsonData     = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
+        NSString* jsonString = [[NSString alloc] initWithBytes:[jsonData bytes] length:[jsonData length] encoding:NSUTF8StringEncoding];
+        
+        [request setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[jsonString length]] forHTTPHeaderField:@"Content-length"];
+        [request setHTTPBody:[jsonString dataUsingEncoding:NSUTF8StringEncoding]];
+        
+        NSURLSession *session = [NSURLSession sharedSession];
+        NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            if (bgTask != UIBackgroundTaskInvalid) {
+                [app endBackgroundTask:bgTask];
+                bgTask = UIBackgroundTaskInvalid;
+            }
+        }];
+        
+        [dataTask resume];
+    }
 }
 
 @end

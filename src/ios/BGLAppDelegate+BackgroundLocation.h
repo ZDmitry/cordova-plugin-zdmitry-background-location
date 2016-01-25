@@ -4,8 +4,9 @@
 
 @interface AppDelegate (BGLAppDelegate)
 
-- (BOOL)prepareCategory;
-
 - (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions;
+
+- (BOOL)prepareCategory;
+- (BOOL)startPoolingLocation;
 
 @end
