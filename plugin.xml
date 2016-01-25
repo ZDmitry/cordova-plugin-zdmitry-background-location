@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="cordova-plugin-zdmitry-background-location"
+        version="0.0.1">
+
+    <name>CDVBackgroundLocation</name>
+    <description>Cordova Background Location Plugin</description>
+    <license>Apache-2.0</license>
+    <keywords>cordova,phonegap,background geolocation</keywords>
+
+    <engines>
+        <engine name="cordova" version=">=3.0.0"/>
+    </engines>
+
+    <js-module src="www/backgroundLocation.js" name="backgroundLocation">
+        <clobbers target="cordova.plugins.backgroundLocation"/>
+    </js-module>
+
+    <platform name="ios">
+        <config-file target="*-Info.plist" parent="NSLocationAlwaysUsageDescription">
+            <string>This app requires background location tracking</string>
+        </config-file>
+
+        <!-- [Info.plist] required permissions -->
+        <config-file target="*-Info.plist" parent="UIBackgroundModes">
+            <array>
+                <string>location</string>
+                <string>fetch</string>
+            </array>
+        </config-file>
+
+        <config-file target="config.xml" parent="/*">
+            <feature name="BackgroundLocation">
+                <param name="ios-package" value="CDVBackgroundLocation"/>
+            </feature>
+        </config-file>
+        
+        <!-- native frameworks -->
+        <framework src="Foundation.framework" weak="true" />
+        <framework src="CoreLocation.framework" weak="true" />
+
+        <!-- sources -->
+        <source-file src="src/ios/CDVBackgroundLocation.m" />
+        <header-file src="src/ios/CDVBackgroundLocation.h" />
+        
+        <source-file src="src/ios/BGLAppDelegate+BackgroundLocation.m" />
+        <header-file src="src/ios/BGLAppDelegate+BackgroundLocation.h" />
+        
+        <source-file src="src/ios/BGLBackgroundTaskManager.m" />
+        <header-file src="src/ios/BGLBackgroundTaskManager.h" />
+
+        <source-file src="src/ios/BGLLocationShareModel.m" />
+        <header-file src="src/ios/BGLLocationShareModel.h" />
+
+        <source-file src="src/ios/BGLLocationTracker.m" />
+        <header-file src="src/ios/BGLLocationTracker.h" />
+
+        <source-file src="src/ios/BGLLocationShareModel.m" />
+        <header-file src="src/ios/BGLLocationShareModel.h" />
+    </platform>
+
+
+</plugin>

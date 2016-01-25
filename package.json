@@ -1,0 +1,37 @@
+{
+  "name": "cordova-plugin-zdmitry-background-location",
+  "version": "0.0.1",
+  "description": "Cordova Background Location Plugin",
+  "cordova": {
+    "id": "cordova-plugin-zdmitry-background-location",
+    "platforms": [
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zdmitry/cordova-plugin-zdmitry-background-location.git"
+  },
+  "keywords": [
+    "gps",
+    "location",
+    "geolocation",
+    "background",
+    "ecosystem:cordova",
+    "cordova-ios",
+    "cordova",
+    "phonegap"
+  ],
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=3.0.0"
+    }
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/zdmitry/cordova-plugin-zdmitry-background-location/issues"
+  },
+  "homepage": "https://github.com/zdmitry/cordova-plugin-zdmitry-background-location#readme"
+}
