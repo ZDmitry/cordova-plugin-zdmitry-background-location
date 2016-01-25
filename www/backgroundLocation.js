@@ -20,7 +20,6 @@ var backgroundLocation = {
             debug                 = config.debug || false,
             stopOnTerminate       = config.stopOnTerminate || false,
 
-            locationService       = config.locationService || this.service.ANDROID_DISTANCE_FILTER,
             interval              = (config.interval >= 0) ? config.interval : locationTimeout * 1000, // milliseconds
 
             server                = (config.server || typeof config.server === 'string') ? config.server : '',
