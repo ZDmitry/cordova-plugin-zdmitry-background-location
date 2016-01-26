@@ -3,8 +3,12 @@
 
 #import "BGLAppDelegate+BackgroundLocation.h"
 #import "BGLLocationTracker.h"
+#import "BGLBackgroundTaskManager.h"
 
 #import <CoreLocation/CoreLocation.h>
+
+// Minimal pool interval in seconds
+#define MIN_POOL_INTERVAL  15
 
 
 @implementation CDVBackgroundLocation {
@@ -27,7 +31,7 @@
 - (void)pluginInitialize
 {
     // background location cache, for when no network is detected.
-     _locationTracker = [[LocationTracker alloc] init];
+    _locationTracker  = [[LocationTracker alloc] init];
 
     _isDebugging     = NO;
     _stopOnTerminate = NO;
@@ -52,8 +56,12 @@
     NSString* serverUrl  = [command.arguments objectAtIndex: 7];
     NSString* authToken  = [command.arguments objectAtIndex: 8];
     
-    _locationTracker.serverUrl   = serverUrl;
-    _locationTracker.serverToken = authToken;
+    _locationTracker.serverUrl      = serverUrl;
+    _locationTracker.serverToken    = authToken;
+    
+    if (_interval > MIN_POOL_INTERVAL) {
+        _locationTracker.serverInterval = _interval;
+    }
 
     NSLog(@"CDVBackgroundGeoLocation configure");
     NSLog(@"  - distanceFilter: %ld", _distanceFilter);
@@ -73,7 +81,7 @@
     
     //Send the best location to server every 60 seconds
     //You may adjust the time interval depends on the need of your app.
-    NSTimeInterval time  = 60.0;
+    NSTimeInterval time  = _locationTracker.serverInterval;
     _locationUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:time
                                      target:self
                                    selector:@selector(updateLocation)
@@ -83,6 +91,9 @@
 
 - (void) stop:(CDVInvokedUrlCommand*)command
 {
+    BackgroundTaskManager* taskMan = [BackgroundTaskManager sharedBackgroundTaskManager];
+    [taskMan endAllBackgroundTasks];
+    
     [_locationTracker stopLocationTracking];
     [_locationUpdateTimer invalidate];
      _locationUpdateTimer = nil;

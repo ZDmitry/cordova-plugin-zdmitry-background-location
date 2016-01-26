@@ -12,8 +12,9 @@
 
 @interface LocationTracker : NSObject <CLLocationManagerDelegate>
 
-@property (nonatomic) NSString* serverUrl;
-@property (nonatomic) NSString* serverToken;
+@property (nonatomic,retain) NSString*      serverUrl;
+@property (nonatomic,retain) NSString*      serverToken;
+@property (nonatomic,assign) NSTimeInterval serverInterval;
 
 @property (nonatomic) CLLocationCoordinate2D myLastLocation;
 @property (nonatomic) CLLocationAccuracy myLastLocationAccuracy;

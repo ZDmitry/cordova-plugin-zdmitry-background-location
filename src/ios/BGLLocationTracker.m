@@ -12,7 +12,18 @@
 #define LONGITUDE @"longitude"
 #define ACCURACY @"accuracy"
 
+// Pool interval in seconds
+#define DEFAULT_POOL_INTERVAL  15
+
 #define IS_OS_8_OR_LATER ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
+
+@interface LocationTracker () {
+    NSDate*   _lastReportDate;
+    NSMutableArray*  _defferedRequests;
+}
+
+@end
+
 
 @implementation LocationTracker
 
@@ -35,6 +46,11 @@
         //Get the share model and also initialize myLocationArray
         self.shareModel = [LocationShareModel sharedModel];
         self.shareModel.myLocationArray = [[NSMutableArray alloc]init];
+        
+        _lastReportDate = nil;
+        _serverInterval = DEFAULT_POOL_INTERVAL;
+        
+        _defferedRequests = [[NSMutableArray alloc] init];
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
 	}
@@ -124,12 +140,12 @@
     
     NSLog(@"locationManager didUpdateLocations");
     
-    for( int i=0; i<locations.count; i++){
+    /* for( int i=0; i<locations.count; i++){
         CLLocation * newLocation = [locations objectAtIndex:i];
         [self sendData:[self locationToHash:newLocation]];
     }
     
-    return;
+    return; */
     
     for(int i=0;i<locations.count;i++){
         CLLocation * newLocation = [locations objectAtIndex:i];
@@ -138,16 +154,10 @@
         
         NSTimeInterval locationAge = -[newLocation.timestamp timeIntervalSinceNow];
         
-        if (locationAge > 30.0)
-        {
-            continue;
-        }
+        if (locationAge > 30.0) continue;
         
         //Select only valid location and also location with good accuracy
-        if(newLocation!=nil&&theAccuracy>0
-           &&theAccuracy<2000
-           &&(!(theLocation.latitude==0.0&&theLocation.longitude==0.0))){
-            
+        if( newLocation != nil && theAccuracy > 0 && theAccuracy < 2000 && (!(theLocation.latitude == 0.f && theLocation.longitude == 0.f))) {
             self.myLastLocation = theLocation;
             self.myLastLocationAccuracy= theAccuracy;
             
@@ -261,10 +271,11 @@
     
     NSLog(@"Send to Server: Latitude(%f) Longitude(%f) Accuracy(%f)",self.myLocation.latitude, self.myLocation.longitude,self.myLocationAccuracy);
     
-    //TODO: Your code to send the self.myLocation and self.myLocationAccuracy to your server
+    //Send data to your server
     [self sendData:myBestLocation];
     
-    //After sending the location to the server successful, remember to clear the current array with the following code. It is to make sure that you clear up old location in the array and add the new locations from locationManager
+    //After sending the location to the server successful, remember to clear the current array with the following code.
+    //It is to make sure that you clear up old location in the array and add the new locations from locationManager
     [self.shareModel.myLocationArray removeAllObjects];
     self.shareModel.myLocationArray = nil;
     self.shareModel.myLocationArray = [[NSMutableArray alloc]init];
@@ -272,22 +283,21 @@
 
 -(NSMutableDictionary*) locationToHash:(CLLocation*)location
 {
-    NSMutableDictionary *returnInfo;
-    returnInfo = [NSMutableDictionary dictionaryWithCapacity:10];
-    
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
     
-    [returnInfo setObject:[formatter stringFromDate:location.timestamp] forKey:@"timestamp"];
-    [returnInfo setObject:[NSNumber numberWithDouble:location.speed] forKey:@"speed"];
-    [returnInfo setObject:[NSNumber numberWithDouble:location.verticalAccuracy] forKey:@"altitudeAccuracy"];
-    [returnInfo setObject:[NSNumber numberWithDouble:location.horizontalAccuracy] forKey:@"accuracy"];
-    [returnInfo setObject:[NSNumber numberWithDouble:location.course] forKey:@"heading"];
-    [returnInfo setObject:[NSNumber numberWithDouble:location.altitude] forKey:@"altitude"];
-    [returnInfo setObject:[NSNumber numberWithDouble:location.coordinate.latitude] forKey:@"latitude"];
-    [returnInfo setObject:[NSNumber numberWithDouble:location.coordinate.longitude] forKey:@"longitude"];
+    NSDictionary *returnInfo = @{
+        @"timestamp":        [formatter stringFromDate:location.timestamp],
+        @"speed":            @(location.speed),
+        @"altitudeAccuracy": @(location.verticalAccuracy),
+        @"accuracy":         @(location.horizontalAccuracy),
+        @"heading":          @(location.course),
+        @"altitude":         @(location.altitude),
+        @"latitude":         @(location.coordinate.latitude),
+        @"longitude":        @(location.coordinate.longitude)
+    };
     
-    return returnInfo;
+    return [returnInfo mutableCopy];
 }
 
 - (void) sendData:(NSDictionary*)dict
@@ -295,7 +305,16 @@
     UIApplication* app = [UIApplication sharedApplication];
     UIBackgroundTaskIdentifier __block bgTask = UIBackgroundTaskInvalid;
     
-    if ([_serverUrl hasPrefix:@"http://"] || [_serverUrl hasPrefix:@"https://"]) {
+    if (dict && ([dict count] > 0) && ([_serverUrl hasPrefix:@"http://"] || [_serverUrl hasPrefix:@"https://"])) {
+        if (_lastReportDate == nil) {
+            _lastReportDate = [NSDate date];
+        }
+        
+        /* NSTimeInterval elapsedSinceLastReport = -[_lastReportDate timeIntervalSinceNow];
+        if (elapsedSinceLastReport < _serverInterval) {
+            return;
+        }*/
+        
         if (app.applicationState == UIApplicationStateBackground) {
             bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
                 [app endBackgroundTask:bgTask];
@@ -303,6 +322,7 @@
             }];
         }
         
+        _lastReportDate = [NSDate date];
         NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:_serverUrl]];
         
         [request setHTTPMethod:@"POST"];
@@ -324,6 +344,18 @@
         
         NSURLSession *session = [NSURLSession sharedSession];
         NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            if (error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
+                [_defferedRequests addObject:dict];
+            } else {
+                if (_defferedRequests.count > 0) {
+                    for( ;_defferedRequests.count != 0; ) {
+                        NSDictionary* req = [_defferedRequests lastObject];
+                        [self sendData:req];
+                        [_defferedRequests removeLastObject];
+                    }
+                }
+            }
+            
             if (bgTask != UIBackgroundTaskInvalid) {
                 [app endBackgroundTask:bgTask];
                 bgTask = UIBackgroundTaskInvalid;
