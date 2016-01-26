@@ -63,7 +63,7 @@
         _locationTracker.serverInterval = _interval;
     }
 
-    NSLog(@"CDVBackgroundGeoLocation configure");
+    NSLog(@"CDVBackgroundLocation configure");
     NSLog(@"  - distanceFilter: %ld", _distanceFilter);
     NSLog(@"  - stationaryRadius: %ld", _stationaryRadius);
     NSLog(@"  - locationTimeout: %ld", _locationTimeout);

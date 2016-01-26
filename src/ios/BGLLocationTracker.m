@@ -8,17 +8,18 @@
 
 #import "BGLLocationTracker.h"
 
-#define LATITUDE @"latitude"
+#define LATITUDE  @"latitude"
 #define LONGITUDE @"longitude"
-#define ACCURACY @"accuracy"
+#define ACCURACY  @"accuracy"
 
 // Pool interval in seconds
 #define DEFAULT_POOL_INTERVAL  15
 
 #define IS_OS_8_OR_LATER ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
 
+
 @interface LocationTracker () {
-    NSDate*   _lastReportDate;
+    NSDate*          _lastReportDate;
     NSMutableArray*  _defferedRequests;
 }
 
@@ -28,21 +29,24 @@
 @implementation LocationTracker
 
 + (CLLocationManager *)sharedLocationManager {
-	static CLLocationManager *_locationManager;
-	
-	@synchronized(self) {
-		if (_locationManager == nil) {
-			_locationManager = [[CLLocationManager alloc] init];
+    static CLLocationManager *_locationManager;
+    
+    @synchronized(self) {
+        if (_locationManager == nil) {
+            _locationManager = [[CLLocationManager alloc] init];
             _locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-			_locationManager.allowsBackgroundLocationUpdates = YES;
-			_locationManager.pausesLocationUpdatesAutomatically = NO;
-		}
-	}
-	return _locationManager;
+            _locationManager.pausesLocationUpdatesAutomatically = NO;
+            
+            if ([_locationManager respondsToSelector:@selector(setAllowsBackgroundLocationUpdates:)]) {
+                _locationManager.allowsBackgroundLocationUpdates = YES;
+            }
+        }
+    }
+    return _locationManager;
 }
 
 - (id)init {
-	if (self==[super init]) {
+    if (self==[super init]) {
         //Get the share model and also initialize myLocationArray
         self.shareModel = [LocationShareModel sharedModel];
         self.shareModel.myLocationArray = [[NSMutableArray alloc]init];
@@ -53,8 +57,8 @@
         _defferedRequests = [[NSMutableArray alloc] init];
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
-	}
-	return self;
+    }
+    return self;
 }
 
 -(void)applicationEnterBackground{
@@ -97,11 +101,11 @@
 - (void)startLocationTracking {
     NSLog(@"startLocationTracking");
 
-	if ([CLLocationManager locationServicesEnabled] == NO) {
+    if ([CLLocationManager locationServicesEnabled] == NO) {
         NSLog(@"locationServicesEnabled false");
-		UIAlertView *servicesDisabledAlert = [[UIAlertView alloc] initWithTitle:@"Location Services Disabled" message:@"You currently have all location services for this device disabled" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-		[servicesDisabledAlert show];
-	} else {
+        UIAlertView *servicesDisabledAlert = [[UIAlertView alloc] initWithTitle:@"Location Services Disabled" message:@"You currently have all location services for this device disabled" delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        [servicesDisabledAlert show];
+    } else {
         CLAuthorizationStatus authorizationStatus= [CLLocationManager authorizationStatus];
         
         if(authorizationStatus == kCLAuthorizationStatusDenied || authorizationStatus == kCLAuthorizationStatusRestricted){
@@ -118,7 +122,7 @@
             }
             [locationManager startUpdatingLocation];
         }
-	}
+    }
 }
 
 
@@ -130,8 +134,8 @@
         self.shareModel.timer = nil;
     }
     
-	CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
-	[locationManager stopUpdatingLocation];
+    CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
+    [locationManager stopUpdatingLocation];
 }
 
 #pragma mark - CLLocationManagerDelegate Methods
