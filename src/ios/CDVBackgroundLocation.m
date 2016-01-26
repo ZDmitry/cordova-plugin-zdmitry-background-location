@@ -19,9 +19,8 @@
     long  _distanceFilter;
     long  _locationTimeout;
     long  _stationaryRadius;
+    long  _desiredAccuracy;
     long  _interval;
-    
-    CLLocationAccuracy _desiredAccuracy;
     
     /* LocationTracker */
     LocationTracker*  _locationTracker;
@@ -48,7 +47,7 @@
     _stationaryRadius    = [[command.arguments objectAtIndex: 0] intValue];
     _distanceFilter      = [[command.arguments objectAtIndex: 1] intValue];
     _locationTimeout     = [[command.arguments objectAtIndex: 2] intValue];
-    _desiredAccuracy     = [self decodeDesiredAccuracy:[[command.arguments objectAtIndex: 3] intValue]];
+    _desiredAccuracy     = [[command.arguments objectAtIndex: 3] intValue];
     _isDebugging         = [[command.arguments objectAtIndex: 4] boolValue];
     _stopOnTerminate     = [[command.arguments objectAtIndex: 5] boolValue];
     _interval            = [[command.arguments objectAtIndex: 6] intValue];
@@ -62,12 +61,15 @@
     if (_interval > MIN_POOL_INTERVAL) {
         _locationTracker.serverInterval = _interval;
     }
+    
+    _locationTracker.desiredAccuracy = [self decodeDesiredAccuracy:_desiredAccuracy];
+    _locationTracker.distanceFilter  = (_distanceFilter < (-1) ? kCLDistanceFilterNone : _distanceFilter);
 
     NSLog(@"CDVBackgroundLocation configure");
     NSLog(@"  - distanceFilter: %ld", _distanceFilter);
     NSLog(@"  - stationaryRadius: %ld", _stationaryRadius);
     NSLog(@"  - locationTimeout: %ld", _locationTimeout);
-    NSLog(@"  - desiredAccuracy: %.4f", _desiredAccuracy);
+    NSLog(@"  - desiredAccuracy: %ld", _desiredAccuracy);
     NSLog(@"  - debug: %d", _isDebugging);
     NSLog(@"  - stopOnTerminate: %d", _stopOnTerminate);
     NSLog(@"  - interval: %ld", _interval);

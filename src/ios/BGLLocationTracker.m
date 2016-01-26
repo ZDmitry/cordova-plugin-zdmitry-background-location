@@ -34,8 +34,9 @@
     @synchronized(self) {
         if (_locationManager == nil) {
             _locationManager = [[CLLocationManager alloc] init];
-            _locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
             _locationManager.pausesLocationUpdatesAutomatically = NO;
+            _locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters;
+            _locationManager.distanceFilter  = kCLDistanceFilterNone;
             
             if ([_locationManager respondsToSelector:@selector(setAllowsBackgroundLocationUpdates:)]) {
                 _locationManager.allowsBackgroundLocationUpdates = YES;
@@ -61,11 +62,33 @@
     return self;
 }
 
+- (void) setDesiredAccuracy:(CLLocationAccuracy)accuracy
+{
+    CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
+    locationManager.desiredAccuracy = accuracy;
+}
+
+- (CLLocationAccuracy) desiredAccuracy
+{
+    CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
+    return locationManager.desiredAccuracy;
+}
+
+- (void) setDistanceFilter:(CLLocationDistance)distance
+{
+    CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
+    locationManager.distanceFilter = distance;
+}
+
+- (CLLocationDistance) distanceFilter
+{
+    CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
+    return locationManager.distanceFilter;
+}
+
 -(void)applicationEnterBackground{
     CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
     locationManager.delegate = self;
-    locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-    locationManager.distanceFilter = kCLDistanceFilterNone;
     
     if(IS_OS_8_OR_LATER) {
         [locationManager requestAlwaysAuthorization];
@@ -88,8 +111,6 @@
     
     CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
     locationManager.delegate = self;
-    locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation;
-    locationManager.distanceFilter  = kCLDistanceFilterNone;
     
     if(IS_OS_8_OR_LATER) {
         [locationManager requestAlwaysAuthorization];
@@ -161,18 +182,25 @@
         if (locationAge > 30.0) continue;
         
         //Select only valid location and also location with good accuracy
-        if( newLocation != nil && theAccuracy > 0 && theAccuracy < 2000 && (!(theLocation.latitude == 0.f && theLocation.longitude == 0.f))) {
-            self.myLastLocation = theLocation;
-            self.myLastLocationAccuracy= theAccuracy;
-            
-            //Add the vallid location with good accuracy into an array
-            //Every 1 minute, I will select the best location based on accuracy and send to server
-            [self.shareModel.myLocationArray addObject:[self locationToHash:newLocation]];
+        if( newLocation != nil ) {
+            NSMutableDictionary* dict = [self locationToHash:newLocation];
+            if (theAccuracy > 0 && theAccuracy < 2000 && (!(theLocation.latitude == 0.f && theLocation.longitude == 0.f))) {
+                self.myLastLocation = theLocation;
+                self.myLastLocationAccuracy= theAccuracy;
+                
+                //Add the vallid location with good accuracy into an array
+                //Every 1 minute, I will select the best location based on accuracy and send to server
+                [self.shareModel.myLocationArray addObject:dict];
+            } else {
+                NSLog(@"Bad location: %@", dict);
+            }
         }
     }
     
     //If the timer still valid, return it (Will not run the code below)
     if (self.shareModel.timer) {
+        NSTimeInterval timeInterval = [[self.shareModel.timer fireDate] timeIntervalSinceNow];
+        NSLog(@"Timer is valid... Will wait = %.4f", timeInterval);
         return;
     }
     
@@ -180,7 +208,7 @@
     [self.shareModel.bgTask beginNewBackgroundTask];
     
     //Restart the locationMaanger after 1 minute
-    self.shareModel.timer = [NSTimer scheduledTimerWithTimeInterval:15 target:self
+    self.shareModel.timer = [NSTimer scheduledTimerWithTimeInterval:_serverInterval target:self
                                                            selector:@selector(restartLocationUpdates)
                                                            userInfo:nil
                                                             repeats:NO];

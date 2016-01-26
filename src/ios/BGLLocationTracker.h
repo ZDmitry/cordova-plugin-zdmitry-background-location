@@ -24,6 +24,10 @@
 @property (nonatomic) CLLocationCoordinate2D myLocation;
 @property (nonatomic) CLLocationAccuracy myLocationAccuracy;
 
+@property (nonatomic,assign) CLLocationAccuracy desiredAccuracy;
+@property (nonatomic,assign) CLLocationDistance distanceFilter;
+
+
 + (CLLocationManager *)sharedLocationManager;
 
 - (void)startLocationTracking;
