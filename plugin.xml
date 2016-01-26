@@ -14,11 +14,11 @@
         <engine name="cordova" version=">=3.0.0"/>
     </engines>
 
-    <js-module src="www/backgroundLocation.js" name="backgroundLocation">
-        <clobbers target="cordova.plugins.backgroundLocation"/>
-    </js-module>
-
     <platform name="ios">
+        <js-module src="www/backgroundLocation.js" name="backgroundLocation">
+            <clobbers target="cordova.plugins.backgroundLocation"/>
+        </js-module>
+        
         <config-file target="*-Info.plist" parent="NSLocationAlwaysUsageDescription">
             <string>This app requires background location tracking</string>
         </config-file>
