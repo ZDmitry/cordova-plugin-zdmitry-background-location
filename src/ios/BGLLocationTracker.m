@@ -346,14 +346,13 @@
 
 - (void) sendDefferedData
 {
-    for( ;_defferedRequests.count != 0; ) {
-        NSDictionary* location = [_defferedRequests lastObject];
-        
+    for(int i = 0; i < _defferedRequests.count; i++ ) {
+        NSDictionary* location = [_defferedRequests objectAtIndex:i];
         [[BGLNetworkManager sharedInstance] sendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
-            // ...
+            if (data && !error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
+                [_defferedRequests removeObjectAtIndex:i];
+            }
         }];
-        
-        [_defferedRequests removeLastObject];
     }
 }
 
