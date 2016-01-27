@@ -2,11 +2,10 @@
 #import "AppDelegate.h"
 
 
-@interface AppDelegate (BGLAppDelegate)
+@interface BGLAppDelegate : AppDelegate
 
-- (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions;
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions;
 
-- (BOOL)prepareCategory;
 - (BOOL)startPoolingLocation;
 
 @end

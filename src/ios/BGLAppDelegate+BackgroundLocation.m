@@ -1,34 +1,18 @@
 #import "BGLAppDelegate+BackgroundLocation.h"
 #import "BGLLocationTracker.h"
 
-#include <objc/runtime.h>
 
-
-@interface BGLAppDelegate_p : NSObject {
-
+@interface BGLAppDelegate () {
+    LocationTracker*  _locationTracker;
+    NSTimer*          _locationUpdateTimer;
 }
-
-@property LocationTracker*     locationTracker;
-@property (nonatomic) NSTimer* locationUpdateTimer;
 
 - (void)updateLocation;
 
 @end
 
 
-@implementation BGLAppDelegate_p
-
-//Class method to make sure the share model is synch across the app
-+ (id)inst
-{
-    static id sharedMyModel = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedMyModel = [[self alloc] init];
-    });
-    return sharedMyModel;
-}
-
+@implementation BGLAppDelegate
 
 - (id) init
 {
@@ -36,31 +20,17 @@
     if (self) {
          _locationTracker = [[LocationTracker alloc] init];
         [_locationTracker startLocationTracking];
+         _locationUpdateTimer = nil;
     }
     return self;
 }
 
-- (void)updateLocation {
-    NSLog(@"updateLocation");
-    
-    [self.locationTracker updateLocationToServer];
-}
-
-
-@end
-
-
-@implementation AppDelegate (BGLAppDelegate)
-
-
-- (BOOL)prepareCategory
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    // Swap method application:didFinishLaunchingWithOptions: by its new implementation
-    Method didFinishLaunchingReplaced = class_getInstanceMethod([AppDelegate class], @selector(_application:didFinishLaunchingWithOptions:));
-    Method didFinishLaunchingOriginal = class_getInstanceMethod([AppDelegate class], @selector(application:didFinishLaunchingWithOptions:));
-    method_exchangeImplementations(didFinishLaunchingReplaced, didFinishLaunchingOriginal);
+    [self startPoolingLocation];
     
-    return YES;
+    // Will run original implementation by new name
+    return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
 
 - (BOOL)startPoolingLocation
@@ -87,13 +57,11 @@
         [alert show];
         
     } else{
-        BGLAppDelegate_p* p_impl = [BGLAppDelegate_p inst];
-        
         //Send the best location to server every 60 seconds
         //You may adjust the time interval depends on the need of your app.
         NSTimeInterval time  = 60.0;
-        p_impl.locationUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:time
-                                         target:p_impl
+        _locationUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:time
+                                         target:self
                                        selector:@selector(updateLocation)
                                        userInfo:nil
                                         repeats:YES];
@@ -104,19 +72,18 @@
     return NO;
 }
 
-- (BOOL)stopPoolingLocation
-{
-    BGLAppDelegate_p* p_impl = [BGLAppDelegate_p inst];
-    [p_impl.locationUpdateTimer invalidate];
-    p_impl.locationUpdateTimer = nil;
+- (void)updateLocation {
+    NSLog(@"updateLocation");
+    
+    [_locationTracker updateLocationToServer];
 }
 
-- (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+- (BOOL)stopPoolingLocation
 {
-    [self startPoolingLocation];
+    [_locationUpdateTimer invalidate];
+     _locationUpdateTimer = nil;
     
-    // Will run original implementation by new name
-    return [self _application:application didFinishLaunchingWithOptions:launchOptions];
+    return YES;
 }
 
 @end
