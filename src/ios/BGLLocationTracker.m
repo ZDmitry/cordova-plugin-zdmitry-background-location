@@ -329,9 +329,10 @@
 {
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
+    NSString* timestamp = [formatter stringFromDate:location.timestamp];
     
-    NSDictionary *returnInfo = @{
-        @"timestamp":        [formatter stringFromDate:location.timestamp],
+    NSDictionary* locationDict = @{
+        @"timestamp":        timestamp,
         @"speed":            @(location.speed),
         @"altitudeAccuracy": @(location.verticalAccuracy),
         @"accuracy":         @(location.horizontalAccuracy),
@@ -341,16 +342,24 @@
         @"longitude":        @(location.coordinate.longitude)
     };
     
+    NSDictionary* returnInfo = @{
+        @"lat": @(location.coordinate.latitude),
+        @"lng": @(location.coordinate.longitude),
+        @"createdAt": timestamp
+    };
+    
     return [returnInfo mutableCopy];
 }
 
 - (void) sendDefferedData
 {
+    BGLNetworkManager* logger = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
+    [logger sendDictionary:@{ @"defferedQueueSize": @(_defferedRequests.count) } withCompletion:nil];
+    
     for(int i = 0; i < _defferedRequests.count; i++ ) {
         NSDictionary* location = [_defferedRequests objectAtIndex:i];
         [[BGLNetworkManager sharedInstance] sendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
             if (data && !error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
-                // [_defferedRequests removeObjectAtIndex:i];
                 [_defferedRequests removeObject:location];
             }
         }];

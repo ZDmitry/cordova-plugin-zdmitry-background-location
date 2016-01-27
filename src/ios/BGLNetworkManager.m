@@ -21,6 +21,15 @@
     return self;
 }
 
+- (id) init:(NSString*)serverURL withToken:(NSString*)token
+{
+    if (self = [super init]) {
+        _serverUrl   = (serverURL ? serverURL : @"");
+        _serverToken = token;
+    }
+    return self;
+}
+
 - (NSString*) datetimeISONow
 {
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
