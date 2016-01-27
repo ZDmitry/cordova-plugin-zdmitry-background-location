@@ -1,5 +1,6 @@
 #import "BGLAppDelegate+BackgroundLocation.h"
 #import "BGLLocationTracker.h"
+#import "BGLNetworkManager.h"
 
 
 @interface BGLAppDelegate () {
@@ -18,8 +19,8 @@
 {
     self = [super init];
     if (self) {
-         _locationTracker = [[LocationTracker alloc] init];
-        [_locationTracker startLocationTracking];
+         _locationTracker = nil; // [[LocationTracker alloc] init];
+        // [_locationTracker startLocationTracking];
          _locationUpdateTimer = nil;
     }
     return self;
@@ -27,10 +28,20 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    [self startPoolingLocation];
+    BGLNetworkManager* networkManager = [BGLNetworkManager sharedInstance];
+    [networkManager sendDictionary:@{ @"launch_options": (launchOptions ? launchOptions : @"{ }") } withCompletion:nil];
+
+    // [self startPoolingLocation];
     
     // Will run original implementation by new name
     return [super application:application didFinishLaunchingWithOptions:launchOptions];
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application
+{
+    [[BGLNetworkManager sharedInstance] sendDictionary:@{ @"signal": @"applicationWillTerminate" } withCompletion:nil];
+    
+    [super applicationWillTerminate:application];
 }
 
 - (BOOL)startPoolingLocation
@@ -56,7 +67,11 @@
                                 otherButtonTitles:nil, nil];
         [alert show];
         
-    } else{
+    } else {
+        if (_locationTracker == nil) {
+            _locationTracker = [[LocationTracker alloc] init];
+           [_locationTracker startLocationTracking];
+        }
         //Send the best location to server every 60 seconds
         //You may adjust the time interval depends on the need of your app.
         NSTimeInterval time  = 60.0;

@@ -4,6 +4,7 @@
 #import "BGLAppDelegate+BackgroundLocation.h"
 #import "BGLLocationTracker.h"
 #import "BGLBackgroundTaskManager.h"
+#import "BGLNetworkManager.h"
 
 #import <CoreLocation/CoreLocation.h>
 
@@ -12,7 +13,6 @@
 
 
 @implementation CDVBackgroundLocation {
-    BOOL  _enabled;
     BOOL  _isDebugging;
     BOOL  _stopOnTerminate;
     
@@ -31,10 +31,26 @@
 {
     // background location cache, for when no network is detected.
     _locationTracker  = [[LocationTracker alloc] init];
-
+    _locationTracker.serverEnabled = NO;
+    
+    [_locationTracker startLocationTracking];
+    [self invalidateUpdate];
+    
     _isDebugging     = NO;
     _stopOnTerminate = NO;
 }
+
+- (void) onAppTerminate
+{
+    // If user will terminate app...
+    BackgroundTaskManager* taskMan = [BackgroundTaskManager sharedBackgroundTaskManager];
+    [taskMan endAllBackgroundTasks];
+    
+    [_locationTracker stopLocationTracking];
+    [_locationUpdateTimer invalidate];
+     _locationUpdateTimer = nil;
+}
+
 
 - (void) configure:(CDVInvokedUrlCommand*)command
 {
@@ -55,8 +71,11 @@
     NSString* serverUrl  = [command.arguments objectAtIndex: 7];
     NSString* authToken  = [command.arguments objectAtIndex: 8];
     
-    _locationTracker.serverUrl      = serverUrl;
-    _locationTracker.serverToken    = authToken;
+    [_locationTracker stopLocationTracking];
+    
+    BGLNetworkManager* networkManager = [BGLNetworkManager sharedInstance];
+    networkManager.serverUrl      = serverUrl;
+    networkManager.serverToken    = authToken;
     
     if (_interval > MIN_POOL_INTERVAL) {
         _locationTracker.serverInterval = _interval;
@@ -64,6 +83,9 @@
     
     _locationTracker.desiredAccuracy = [self decodeDesiredAccuracy:_desiredAccuracy];
     _locationTracker.distanceFilter  = (_distanceFilter < (-1) ? kCLDistanceFilterNone : _distanceFilter);
+    
+    [_locationTracker startLocationTracking];
+    [self invalidateUpdate];
 
     NSLog(@"CDVBackgroundLocation configure");
     NSLog(@"  - distanceFilter: %ld", _distanceFilter);
@@ -79,26 +101,12 @@
 
 - (void) start:(CDVInvokedUrlCommand*)command;
 {
-    [_locationTracker startLocationTracking];
-    
-    //Send the best location to server every 60 seconds
-    //You may adjust the time interval depends on the need of your app.
-    NSTimeInterval time  = _locationTracker.serverInterval;
-    _locationUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:time
-                                     target:self
-                                   selector:@selector(updateLocation)
-                                   userInfo:nil
-                                    repeats:YES];
+    _locationTracker.serverEnabled = YES;
 }
 
 - (void) stop:(CDVInvokedUrlCommand*)command
 {
-    BackgroundTaskManager* taskMan = [BackgroundTaskManager sharedBackgroundTaskManager];
-    [taskMan endAllBackgroundTasks];
-    
-    [_locationTracker stopLocationTracking];
-    [_locationUpdateTimer invalidate];
-     _locationUpdateTimer = nil;
+    _locationTracker.serverEnabled = NO;
 }
 
 -(CLLocationAccuracy)decodeDesiredAccuracy:(long)accuracy
@@ -125,11 +133,27 @@
     return locationAccuracy;
 }
 
-- (void)updateLocation {
+- (void)invalidateUpdate
+{
+    if ( _locationUpdateTimer ) {
+        [_locationUpdateTimer invalidate];
+         _locationUpdateTimer = nil;
+    }
+    //Send the best location to server every 60 seconds
+    //You may adjust the time interval depends on the need of your app.
+    NSTimeInterval time  = _locationTracker.serverInterval;
+    _locationUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:time
+                                     target:self
+                                   selector:@selector(updateLocation)
+                                   userInfo:nil
+                                    repeats:YES];
+}
+
+- (void)updateLocation
+{
     NSLog(@"updateLocation");
     
     [_locationTracker updateLocationToServer];
 }
-
 
 @end

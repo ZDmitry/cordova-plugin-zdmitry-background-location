@@ -7,6 +7,7 @@
 //
 
 #import "BGLLocationTracker.h"
+#import "BGLNetworkManager.h"
 
 #define LATITUDE  @"latitude"
 #define LONGITUDE @"longitude"
@@ -18,7 +19,7 @@
 #define IS_OS_8_OR_LATER ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
 
 
-@interface LocationTracker () {
+@interface LocationTracker () <BackgroundTaskManagerDelegate> {
     NSDate*          _lastReportDate;
     NSMutableArray*  _defferedRequests;
 }
@@ -54,8 +55,11 @@
         
         _lastReportDate = nil;
         _serverInterval = DEFAULT_POOL_INTERVAL;
+        _serverEnabled  = YES;
         
         _defferedRequests = [[NSMutableArray alloc] init];
+        
+        [BackgroundTaskManager sharedBackgroundTaskManager].delegate = self;
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationEnterBackground) name:UIApplicationDidEnterBackgroundNotification object:nil];
     }
@@ -135,8 +139,6 @@
             NSLog(@"authorizationStatus authorized");
             CLLocationManager *locationManager = [LocationTracker sharedLocationManager];
             locationManager.delegate = self;
-            locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters;
-            locationManager.distanceFilter = kCLDistanceFilterNone;
             
             if(IS_OS_8_OR_LATER) {
               [locationManager requestAlwaysAuthorization];
@@ -303,8 +305,18 @@
     
     NSLog(@"Send to Server: Latitude(%f) Longitude(%f) Accuracy(%f)",self.myLocation.latitude, self.myLocation.longitude,self.myLocationAccuracy);
     
-    //Send data to your server
-    [self sendData:myBestLocation];
+    if (_serverEnabled) { //Send data to your server
+        [[BGLNetworkManager sharedInstance] sendDictionary:myBestLocation withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
+            if (error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
+                [_defferedRequests addObject:myBestLocation];
+            } else {
+                if (_defferedRequests.count > 0) {
+                    [self sendDefferedData];
+                }
+            }
+            
+        }];
+    }
     
     //After sending the location to the server successful, remember to clear the current array with the following code.
     //It is to make sure that you clear up old location in the array and add the new locations from locationManager
@@ -332,70 +344,32 @@
     return [returnInfo mutableCopy];
 }
 
-- (void) sendData:(NSDictionary*)dict
+- (void) sendDefferedData
 {
-    UIApplication* app = [UIApplication sharedApplication];
-    UIBackgroundTaskIdentifier __block bgTask = UIBackgroundTaskInvalid;
-    
-    if (dict && ([dict count] > 0) && ([_serverUrl hasPrefix:@"http://"] || [_serverUrl hasPrefix:@"https://"])) {
-        if (_lastReportDate == nil) {
-            _lastReportDate = [NSDate date];
-        }
+    for( ;_defferedRequests.count != 0; ) {
+        NSDictionary* location = [_defferedRequests lastObject];
         
-        /* NSTimeInterval elapsedSinceLastReport = -[_lastReportDate timeIntervalSinceNow];
-        if (elapsedSinceLastReport < _serverInterval) {
-            return;
-        }*/
-        
-        if (app.applicationState == UIApplicationStateBackground) {
-            bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
-                [app endBackgroundTask:bgTask];
-                bgTask = UIBackgroundTaskInvalid;
-            }];
-        }
-        
-        _lastReportDate = [NSDate date];
-        NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:_serverUrl]];
-        
-        [request setHTTPMethod:@"POST"];
-        [request setValue:@"application/json" forHTTPHeaderField:@"Content-type"];
-        
-        if (_serverToken.length > 0) {
-            [request setValue:_serverToken forHTTPHeaderField:@"Authorization"];
-        }
-        
-        // NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-        // formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
-        // NSString* isoDate = [formatter stringFromDate:[NSDate date]];
-        
-        NSData* jsonData     = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
-        NSString* jsonString = [[NSString alloc] initWithBytes:[jsonData bytes] length:[jsonData length] encoding:NSUTF8StringEncoding];
-        
-        [request setValue:[NSString stringWithFormat:@"%ld", (unsigned long)[jsonString length]] forHTTPHeaderField:@"Content-length"];
-        [request setHTTPBody:[jsonString dataUsingEncoding:NSUTF8StringEncoding]];
-        
-        NSURLSession *session = [NSURLSession sharedSession];
-        NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-            if (error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
-                [_defferedRequests addObject:dict];
-            } else {
-                if (_defferedRequests.count > 0) {
-                    for( ;_defferedRequests.count != 0; ) {
-                        NSDictionary* req = [_defferedRequests lastObject];
-                        [self sendData:req];
-                        [_defferedRequests removeLastObject];
-                    }
-                }
-            }
-            
-            if (bgTask != UIBackgroundTaskInvalid) {
-                [app endBackgroundTask:bgTask];
-                bgTask = UIBackgroundTaskInvalid;
-            }
+        [[BGLNetworkManager sharedInstance] sendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
+            // ...
         }];
         
-        [dataTask resume];
+        [_defferedRequests removeLastObject];
     }
+}
+
+#pragma mark -
+#pragma mark BackgroundTaskManagerDelegate
+
+- (void) backgroundTaskExpired:(unsigned long)taskId
+{
+    [[BGLNetworkManager sharedInstance]
+        sendDictionary:@{
+            @"event":  @"backgroundTaskExpired",
+            @"return": @(taskId)
+        }
+        withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
+        // ...
+    }];
 }
 
 @end

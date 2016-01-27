@@ -56,6 +56,9 @@
 
         <source-file src="src/ios/BGLLocationTracker.m" />
         <header-file src="src/ios/BGLLocationTracker.h" />
+
+        <source-file src="src/ios/BGLNetworkManager.m" />
+        <header-file src="src/ios/BGLNetworkManager.h" />
     </platform>
 
 

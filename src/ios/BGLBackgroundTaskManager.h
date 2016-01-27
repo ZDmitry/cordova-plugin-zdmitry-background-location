@@ -7,7 +7,15 @@
 
 #import <Foundation/Foundation.h>
 
+@protocol BackgroundTaskManagerDelegate <NSObject>
+
+-(void)backgroundTaskExpired:(unsigned long)taskId;
+
+@end
+
 @interface BackgroundTaskManager : NSObject
+
+@property (nonatomic,weak) id<BackgroundTaskManagerDelegate> delegate;
 
 +(instancetype)sharedBackgroundTaskManager;
 

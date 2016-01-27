@@ -43,6 +43,10 @@
         bgTaskId = [application beginBackgroundTaskWithExpirationHandler:^{
             NSLog(@"background task %lu expired", (unsigned long)bgTaskId);
             
+            if (_delegate) {
+                [_delegate backgroundTaskExpired:bgTaskId];
+            }
+            
             [self.bgTaskIdList removeObject:@(bgTaskId)];
             [application endBackgroundTask:bgTaskId];
             bgTaskId = UIBackgroundTaskInvalid;
