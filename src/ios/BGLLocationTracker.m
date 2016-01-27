@@ -350,7 +350,8 @@
         NSDictionary* location = [_defferedRequests objectAtIndex:i];
         [[BGLNetworkManager sharedInstance] sendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
             if (data && !error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
-                [_defferedRequests removeObjectAtIndex:i];
+                // [_defferedRequests removeObjectAtIndex:i];
+                [_defferedRequests removeObject:location];
             }
         }];
     }
