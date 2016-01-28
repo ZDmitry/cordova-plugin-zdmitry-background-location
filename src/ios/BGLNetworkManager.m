@@ -39,29 +39,48 @@
 
 - (void) sendString:(NSString*)text withCompletion:(BGLDownloadComplete_block)block
 {
-    NSString* data = (text ? text : @"");
-    
-    [self sendData:[data dataUsingEncoding:NSUTF8StringEncoding]
-      withMimeType:@"text/plain"
-    withCompletion:block];
+    NSURLSessionDataTask* task = [self defferedSendString:text withCompletion:block];
+    if (task) [task resume];
 }
 
 - (void) sendDictionary:(NSDictionary*)dict withCompletion:(BGLDownloadComplete_block)block
+{
+    NSURLSessionDataTask* task = [self defferedSendDictionary:dict withCompletion:block];
+    if (task) [task resume];
+}
+
+- (void) sendData:(NSData*)data withMimeType:(NSString*)mimeType withCompletion:(BGLDownloadComplete_block)block
+{
+    NSURLSessionDataTask* task = [self defferedSendData:data withMimeType:mimeType withCompletion:block];
+    if (task) [task resume];
+}
+
+- (NSURLSessionDataTask*) defferedSendString:(NSString*)text withCompletion:(BGLDownloadComplete_block)block
+{
+    NSString* data = (text ? text : @"");
+    
+    return [self defferedSendData:[data dataUsingEncoding:NSUTF8StringEncoding]
+                     withMimeType:@"text/plain"
+                   withCompletion:block];
+}
+
+- (NSURLSessionDataTask*) defferedSendDictionary:(NSDictionary*)dict withCompletion:(BGLDownloadComplete_block)block
 {
     NSError*  error      = nil;
     NSString* jsonString = @"{ }";
     
     NSData*   jsonData   = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
+    
     if (jsonData && !error) {
         jsonString = [[NSString alloc] initWithBytes:[jsonData bytes] length:[jsonData length] encoding:NSUTF8StringEncoding];
     }
     
-    [self sendData:[jsonString dataUsingEncoding:NSUTF8StringEncoding]
-      withMimeType:@"application/json"
-    withCompletion:block];
+    return [self defferedSendData:[jsonString dataUsingEncoding:NSUTF8StringEncoding]
+                     withMimeType:@"application/json"
+                   withCompletion:block];
 }
 
-- (void) sendData:(NSData*)data withMimeType:(NSString*)mimeType withCompletion:(BGLDownloadComplete_block)block
+- (NSURLSessionDataTask*) defferedSendData:(NSData*)data withMimeType:(NSString*)mimeType withCompletion:(BGLDownloadComplete_block)block
 {
     if (data && data.length > 0) {
         // OK
@@ -77,7 +96,7 @@
                                                  code:NSURLErrorCannotDecodeRawData
                                              userInfo:errDict];
             block(nil, nil, error);
-            return;
+            return nil;
         }
     }
     
@@ -95,7 +114,7 @@
                                                  code:NSURLErrorBadURL
                                              userInfo:errDict];
             block(nil, nil, error);
-            return;
+            return nil;
         }
     }
     
@@ -112,7 +131,8 @@
     
     NSURLSession*         session  = [NSURLSession sharedSession];
     NSURLSessionDataTask* dataTask = [session dataTaskWithRequest:request completionHandler:block];
-    [dataTask resume];
+    
+    return dataTask;
 }
 
 @end

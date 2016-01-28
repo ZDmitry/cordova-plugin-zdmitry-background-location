@@ -353,17 +353,28 @@
 
 - (void) sendDefferedData
 {
+    NSMutableArray* defferedJob = [[NSMutableArray alloc] init];
+    
     BGLNetworkManager* logger = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
     [logger sendDictionary:@{ @"defferedQueueSize": @(_defferedRequests.count) } withCompletion:nil];
     
     for(int i = 0; i < _defferedRequests.count; i++ ) {
         NSDictionary* location = [_defferedRequests objectAtIndex:i];
-        [[BGLNetworkManager sharedInstance] sendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
+        NSURLSessionDataTask* task = [[BGLNetworkManager sharedInstance] defferedSendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
             if (data && !error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
                 [_defferedRequests removeObject:location];
             }
         }];
+        [defferedJob addObject:task];
     }
+    
+    for(int i = 0; i < defferedJob.count; i++ ) {
+        NSURLSessionDataTask* task = [defferedJob objectAtIndex:i];
+        [task resume];
+    }
+    
+    [defferedJob removeAllObjects];
+     defferedJob = nil;
 }
 
 #pragma mark -

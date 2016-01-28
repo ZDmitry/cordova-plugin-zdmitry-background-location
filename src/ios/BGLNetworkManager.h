@@ -17,4 +17,8 @@ typedef void (^BGLDownloadComplete_block)(NSData* data, NSURLResponse* response,
 - (void) sendDictionary:(NSDictionary*)text withCompletion:(BGLDownloadComplete_block)block;
 - (void) sendData:(NSData*)data withMimeType:(NSString*)mimeType withCompletion:(BGLDownloadComplete_block)block;
 
+- (NSURLSessionDataTask*) defferedSendString:(NSString*)text withCompletion:(BGLDownloadComplete_block)block;
+- (NSURLSessionDataTask*) defferedSendDictionary:(NSDictionary*)text withCompletion:(BGLDownloadComplete_block)block;
+- (NSURLSessionDataTask*) defferedSendData:(NSData*)data withMimeType:(NSString*)mimeType withCompletion:(BGLDownloadComplete_block)block;
+
 @end
