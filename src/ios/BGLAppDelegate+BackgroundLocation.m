@@ -28,8 +28,9 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    BGLNetworkManager* networkManager = [BGLNetworkManager sharedInstance];
-    [networkManager sendDictionary:@{ @"launch_options": (launchOptions ? launchOptions : @"{ }") } withCompletion:nil];
+    if ([launchOptions objectForKey:UIApplicationLaunchOptionsLocationKey]) {
+        // ...
+    }
 
     // [self startPoolingLocation];
     
