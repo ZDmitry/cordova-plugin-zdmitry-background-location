@@ -365,7 +365,7 @@
                 [_defferedRequests removeObject:location];
             }
         }];
-        [defferedJob addObject:task];
+        if (task) [defferedJob addObject:task];
     }
     
     for(int i = 0; i < defferedJob.count; i++ ) {
