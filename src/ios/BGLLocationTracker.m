@@ -354,14 +354,28 @@
 - (void) sendDefferedData
 {
     NSMutableArray* defferedJob = [[NSMutableArray alloc] init];
-    
-    BGLNetworkManager* logger = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
-    [logger sendDictionary:@{ @"defferedQueueSize": @(_defferedRequests.count) } withCompletion:nil];
+    BGLNetworkManager* logger   = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
     
     for(int i = 0; i < _defferedRequests.count; i++ ) {
         NSDictionary* location = [_defferedRequests objectAtIndex:i];
         NSURLSessionDataTask* task = [[BGLNetworkManager sharedInstance] defferedSendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
             if (data && !error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
+                NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+                formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
+                NSString* timeNow = [formatter stringFromDate:[NSDate date]];
+                
+                NSHTTPURLResponse* httpResp = (NSHTTPURLResponse*)response;
+                long statusCode = (httpResp ? httpResp.statusCode : (-1));
+                
+                [logger sendDictionary:@{
+                    @"defferedLocation":location,
+                              @"status": @"sent",
+                            @"response": @{
+                                @"data": [NSString stringWithUTF8String:data.bytes],
+                                @"code": @(statusCode)
+                            },
+                           @"timestamp": timeNow } withCompletion:nil];
+                
                 [_defferedRequests removeObject:location];
             }
         }];
