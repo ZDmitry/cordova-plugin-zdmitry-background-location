@@ -36,7 +36,7 @@
 {
     self = [super init];
     if (self) {
-        _logger = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
+        _logger = [[BGLNetworkManager alloc] init:@"" withToken:nil];
         _logger.useTimestamp = YES;
         
         _cdvBackgroundLocation = [[CDVBackgroundLocation alloc] init];

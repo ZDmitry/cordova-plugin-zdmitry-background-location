@@ -383,7 +383,7 @@
 - (void) sendDefferedData
 {
     NSMutableArray* defferedJob = [[NSMutableArray alloc] init];
-    BGLNetworkManager* logger   = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
+    BGLNetworkManager* logger   = [[BGLNetworkManager alloc] init:@"" withToken:nil];
     
     
     for(int i = 0; i < _defferedRequests.count; i++ ) {
@@ -402,14 +402,15 @@
                     respData = [NSString stringWithUTF8String:data.bytes];
                 }
                 
-                [logger sendDictionary:@{
+                /* [logger sendDictionary:@{
                     @"defferedLocation":location,
                               @"status": @"sent",
                             @"response": @{
                                 @"data": respData,
                                 @"code": @(statusCode)
                             },
-                           @"timestamp": timeNow } withCompletion:nil];
+                           @"timestamp": timeNow } withCompletion:nil]; 
+                */
                 
                 [_defferedRequests removeObject:location];
             }
