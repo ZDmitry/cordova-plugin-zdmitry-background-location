@@ -2,10 +2,9 @@
 #import "AppDelegate.h"
 
 
-@interface BGLAppDelegate : AppDelegate
+@interface AppDelegate (BackgroundLocation)
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions;
-
-- (BOOL)startPoolingLocation;
+- (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions;
+- (void)_applicationWillTerminate:(UIApplication *)application;
 
 @end

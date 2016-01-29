@@ -47,6 +47,30 @@
     return _locationManager;
 }
 
++(CLLocationAccuracy)decodeDesiredAccuracy:(long)accuracy
+{
+    CLLocationAccuracy locationAccuracy;
+    
+    switch (accuracy) {
+        case 1000:
+            locationAccuracy = kCLLocationAccuracyKilometer;
+            break;
+        case 100:
+            locationAccuracy = kCLLocationAccuracyHundredMeters;
+            break;
+        case 10:
+            locationAccuracy = kCLLocationAccuracyNearestTenMeters;
+            break;
+        case 0:
+            locationAccuracy = kCLLocationAccuracyBest;
+            break;
+        default:
+            locationAccuracy = kCLLocationAccuracyHundredMeters;
+    }
+    
+    return locationAccuracy;
+}
+
 - (id)init {
     if (self==[super init]) {
         //Get the share model and also initialize myLocationArray
@@ -98,6 +122,7 @@
         [locationManager requestAlwaysAuthorization];
     }
     [locationManager startUpdatingLocation];
+    [locationManager startMonitoringSignificantLocationChanges];
     
     //Use the BackgroundTaskManager to manage all the background Task
     self.shareModel.bgTask = [BackgroundTaskManager sharedBackgroundTaskManager];
@@ -119,7 +144,9 @@
     if(IS_OS_8_OR_LATER) {
         [locationManager requestAlwaysAuthorization];
     }
+    
     [locationManager startUpdatingLocation];
+    [locationManager startMonitoringSignificantLocationChanges];
 }
 
 
@@ -143,7 +170,9 @@
             if(IS_OS_8_OR_LATER) {
               [locationManager requestAlwaysAuthorization];
             }
+            
             [locationManager startUpdatingLocation];
+            [locationManager startMonitoringSignificantLocationChanges];
         }
     }
 }
@@ -356,6 +385,7 @@
     NSMutableArray* defferedJob = [[NSMutableArray alloc] init];
     BGLNetworkManager* logger   = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
     
+    
     for(int i = 0; i < _defferedRequests.count; i++ ) {
         NSDictionary* location = [_defferedRequests objectAtIndex:i];
         NSURLSessionDataTask* task = [[BGLNetworkManager sharedInstance] defferedSendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -367,11 +397,16 @@
                 NSHTTPURLResponse* httpResp = (NSHTTPURLResponse*)response;
                 long statusCode = (httpResp ? httpResp.statusCode : (-1));
                 
+                NSString* respData = @"";
+                if (data && data.length > 0 && data.bytes ) {
+                    respData = [NSString stringWithUTF8String:data.bytes];
+                }
+                
                 [logger sendDictionary:@{
                     @"defferedLocation":location,
                               @"status": @"sent",
                             @"response": @{
-                                @"data": [NSString stringWithUTF8String:data.bytes],
+                                @"data": respData,
                                 @"code": @(statusCode)
                             },
                            @"timestamp": timeNow } withCompletion:nil];

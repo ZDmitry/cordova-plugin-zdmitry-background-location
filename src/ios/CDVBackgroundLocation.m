@@ -8,8 +8,6 @@
 
 #import <CoreLocation/CoreLocation.h>
 
-// Minimal pool interval in seconds
-#define MIN_POOL_INTERVAL  15
 
 
 @implementation CDVBackgroundLocation {
@@ -81,12 +79,70 @@
         _locationTracker.serverInterval = _interval;
     }
     
-    _locationTracker.desiredAccuracy = [self decodeDesiredAccuracy:_desiredAccuracy];
-    _locationTracker.distanceFilter  = (_distanceFilter < (-1) ? kCLDistanceFilterNone : _distanceFilter);
+    _locationTracker.desiredAccuracy = [LocationTracker decodeDesiredAccuracy:_desiredAccuracy];
+    _locationTracker.distanceFilter  = (_distanceFilter < 0 ? kCLDistanceFilterNone : _distanceFilter);
+    
+     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+     
+    [defaults setObject:@(_stationaryRadius) forKey:kCDVBackgroundLocation_stationaryRadius];
+    [defaults setObject:@(_distanceFilter)   forKey:kCDVBackgroundLocation_distanceFilter];
+    [defaults setObject:@(_locationTimeout)  forKey:kCDVBackgroundLocation_locationTimeout];
+    [defaults setObject:@(_desiredAccuracy)  forKey:kCDVBackgroundLocation_desiredAccuracy];
+    [defaults setObject:@(_isDebugging)      forKey:kCDVBackgroundLocation_isDebugging];
+    [defaults setObject:@(_stopOnTerminate)  forKey:kCDVBackgroundLocation_stopOnTerminate];
+    [defaults setObject:@(_interval)         forKey:kCDVBackgroundLocation_interval];
+    
+    [defaults setObject:serverUrl            forKey:kCDVBackgroundLocation_serverUrl];
+    [defaults setObject:authToken            forKey:kCDVBackgroundLocation_authToken];
+     
+    [defaults synchronize];
     
     [_locationTracker startLocationTracking];
     [self invalidateUpdate];
+    
+    NSLog(@"CDVBackgroundLocation configure");
+    NSLog(@"  - distanceFilter: %ld", _distanceFilter);
+    NSLog(@"  - stationaryRadius: %ld", _stationaryRadius);
+    NSLog(@"  - locationTimeout: %ld", _locationTimeout);
+    NSLog(@"  - desiredAccuracy: %ld", _desiredAccuracy);
+    NSLog(@"  - debug: %d", _isDebugging);
+    NSLog(@"  - stopOnTerminate: %d", _stopOnTerminate);
+    NSLog(@"  - interval: %ld", _interval);
+    
+    NSLog(@"  - server: %@", serverUrl);
+}
 
+- (void) configureWithDefaults
+{
+    [_locationTracker stopLocationTracking];
+    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+     
+    _stationaryRadius = [[defaults objectForKey:kCDVBackgroundLocation_stationaryRadius] longValue];
+    _distanceFilter   = [[defaults objectForKey:kCDVBackgroundLocation_distanceFilter] longValue];
+    _locationTimeout  = [[defaults  objectForKey:kCDVBackgroundLocation_locationTimeout] longValue];
+    _desiredAccuracy  = [[defaults objectForKey:kCDVBackgroundLocation_desiredAccuracy] longValue];
+    _isDebugging      = [[defaults objectForKey:kCDVBackgroundLocation_isDebugging] boolValue];
+    _stopOnTerminate  = [[defaults objectForKey:kCDVBackgroundLocation_stopOnTerminate] boolValue];
+    _interval         = [[defaults objectForKey:kCDVBackgroundLocation_interval] longValue];
+    
+    NSString* serverUrl = [defaults objectForKey:kCDVBackgroundLocation_serverUrl];
+    NSString* authToken = [defaults objectForKey:kCDVBackgroundLocation_authToken];
+    
+    BGLNetworkManager* networkManager = [BGLNetworkManager sharedInstance];
+    networkManager.serverUrl      = serverUrl;
+    networkManager.serverToken    = authToken;
+    
+    if (_interval > MIN_POOL_INTERVAL) {
+        _locationTracker.serverInterval = _interval;
+    }
+    
+    _locationTracker.desiredAccuracy = [LocationTracker decodeDesiredAccuracy:_desiredAccuracy];
+    _locationTracker.distanceFilter  = (_distanceFilter < 0 ? kCLDistanceFilterNone : _distanceFilter);
+    
+    [_locationTracker startLocationTracking];
+    [self invalidateUpdate];
+    
     NSLog(@"CDVBackgroundLocation configure");
     NSLog(@"  - distanceFilter: %ld", _distanceFilter);
     NSLog(@"  - stationaryRadius: %ld", _stationaryRadius);
@@ -107,30 +163,6 @@
 - (void) stop:(CDVInvokedUrlCommand*)command
 {
     _locationTracker.serverEnabled = NO;
-}
-
--(CLLocationAccuracy)decodeDesiredAccuracy:(long)accuracy
-{
-    CLLocationAccuracy locationAccuracy;
-    
-    switch (accuracy) {
-        case 1000:
-            locationAccuracy = kCLLocationAccuracyKilometer;
-            break;
-        case 100:
-            locationAccuracy = kCLLocationAccuracyHundredMeters;
-            break;
-        case 10:
-            locationAccuracy = kCLLocationAccuracyNearestTenMeters;
-            break;
-        case 0:
-            locationAccuracy = kCLLocationAccuracyBest;
-            break;
-        default:
-            locationAccuracy = kCLLocationAccuracyHundredMeters;
-    }
-    
-    return locationAccuracy;
 }
 
 - (void)invalidateUpdate

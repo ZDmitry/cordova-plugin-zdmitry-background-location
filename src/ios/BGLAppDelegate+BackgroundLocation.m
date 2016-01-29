@@ -1,105 +1,121 @@
 #import "BGLAppDelegate+BackgroundLocation.h"
+#import "AppDelegate.h"
+
+#import <Availability.h>
+#import <objc/runtime.h>
+
+#import "CDVBackgroundLocation.h"
 #import "BGLLocationTracker.h"
 #import "BGLNetworkManager.h"
 
 
-@interface BGLAppDelegate () {
-    LocationTracker*  _locationTracker;
-    NSTimer*          _locationUpdateTimer;
+@interface BGLAppDelegate_p : NSObject {
+    BGLNetworkManager*     _logger;
+    CDVBackgroundLocation* _cdvBackgroundLocation;
 }
 
-- (void)updateLocation;
++ (id) sharendInst;
+
+- (BOOL)startPoolingLocation;
 
 @end
 
+@implementation BGLAppDelegate_p
 
-@implementation BGLAppDelegate
++ (id) sharendInst
+{
+    static id sharedInst = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInst = [[self alloc] init];
+    });
+    return sharedInst;
+}
 
 - (id) init
 {
     self = [super init];
     if (self) {
-         _locationTracker = nil; // [[LocationTracker alloc] init];
-        // [_locationTracker startLocationTracking];
-         _locationUpdateTimer = nil;
+        _logger = [[BGLNetworkManager alloc] init:@"http://192.168.0.28:3000/log" withToken:nil];
+        _logger.useTimestamp = YES;
+        
+        _cdvBackgroundLocation = [[CDVBackgroundLocation alloc] init];
     }
     return self;
 }
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+- (void)log:(NSDictionary*)dict
 {
+    if (_logger && dict && dict.count > 0) {
+        [_logger sendDictionary:dict withCompletion:nil];
+    }
+}
+
+- (BOOL)startPoolingLocation
+{
+    [_cdvBackgroundLocation configureWithDefaults];
+    return YES;
+}
+
+@end
+
+
+@implementation AppDelegate (BackgroundLocation)
+
+/**
+ * Its dangerous to override a method from within a category.
+ * Instead we will use method swizzling.
+ */
++ (void) load
+{
+    [self _bglExchangeMethods:@selector(application:didFinishLaunchingWithOptions:)
+                     swizzled:@selector(_application:didFinishLaunchingWithOptions:)];
+    
+    [self _bglExchangeMethods:@selector(applicationWillTerminate:)
+                     swizzled:@selector(_applicationWillTerminate:)];
+}
+
+- (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    BGLAppDelegate_p* _pimpl = [BGLAppDelegate_p sharendInst];
+    
     if ([launchOptions objectForKey:UIApplicationLaunchOptionsLocationKey]) {
-        // ...
+        [_pimpl log:@{ @"action": @"application:didFinishLaunchingWithOptions:", @"reason": @"UIApplicationLaunchOptionsLocationKey" }];
+        [_pimpl startPoolingLocation];
     }
 
     // [self startPoolingLocation];
     
     // Will run original implementation by new name
-    return [super application:application didFinishLaunchingWithOptions:launchOptions];
+    return [self _application:application didFinishLaunchingWithOptions:launchOptions];
 }
 
-- (void)applicationWillTerminate:(UIApplication *)application
+- (void)_applicationWillTerminate:(UIApplication *)application
 {
-    [[BGLNetworkManager sharedInstance] sendDictionary:@{ @"signal": @"applicationWillTerminate" } withCompletion:nil];
+    [[BGLAppDelegate_p sharendInst] log:@{ @"action": @"applicationWillTerminate:" }];
     
-    [super applicationWillTerminate:application];
+    // Will run original implementation by new name
+    [self _applicationWillTerminate:application];
 }
 
-- (BOOL)startPoolingLocation
+#pragma mark -
+#pragma mark Swizzling
+
+void _bglDefaultMethodIMP (id self, SEL _cmd) { /* nothing to do here */ }
+
+/**
+ * Exchange the method implementations.
+ */
++ (void) _bglExchangeMethods:(SEL)original swizzled:(SEL)swizzled
 {
-    UIAlertView * alert;
-    
-    //We have to make sure that the Background App Refresh is enable for the Location updates to work in the background.
-    if([[UIApplication sharedApplication] backgroundRefreshStatus] == UIBackgroundRefreshStatusDenied){
-        
-        alert = [[UIAlertView alloc]initWithTitle:@""
-                                          message:@"The app doesn't work without the Background App Refresh enabled. To turn it on, go to Settings > General > Background App Refresh"
-                                         delegate:nil
-                                cancelButtonTitle:@"Ok"
-                                otherButtonTitles:nil, nil];
-        [alert show];
-        
-    }else if([[UIApplication sharedApplication] backgroundRefreshStatus] == UIBackgroundRefreshStatusRestricted){
-        
-        alert = [[UIAlertView alloc]initWithTitle:@""
-                                          message:@"The functions of this app are limited because the Background App Refresh is disable."
-                                         delegate:nil
-                                cancelButtonTitle:@"Ok"
-                                otherButtonTitles:nil, nil];
-        [alert show];
-        
-    } else {
-        if (_locationTracker == nil) {
-            _locationTracker = [[LocationTracker alloc] init];
-           [_locationTracker startLocationTracking];
-        }
-        //Send the best location to server every 60 seconds
-        //You may adjust the time interval depends on the need of your app.
-        NSTimeInterval time  = 60.0;
-        _locationUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:time
-                                         target:self
-                                       selector:@selector(updateLocation)
-                                       userInfo:nil
-                                        repeats:YES];
-        
-        return YES;
+    class_addMethod(self, original, (IMP)_bglDefaultMethodIMP, "v@:");
+
+    Method original_method = class_getInstanceMethod(self, original);
+    Method swizzled_method = class_getInstanceMethod(self, swizzled);
+
+    if ( original_method != swizzled_method ) {
+        method_exchangeImplementations(original_method, swizzled_method);
     }
-    
-    return NO;
-}
-
-- (void)updateLocation {
-    NSLog(@"updateLocation");
-    
-    [_locationTracker updateLocationToServer];
-}
-
-- (BOOL)stopPoolingLocation
-{
-    [_locationUpdateTimer invalidate];
-     _locationUpdateTimer = nil;
-    
-    return YES;
 }
 
 @end

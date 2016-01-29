@@ -10,6 +10,22 @@
 #import <CoreLocation/CoreLocation.h>
 #import "BGLLocationShareModel.h"
 
+
+#define kCDVBackgroundLocation_stationaryRadius  @"CDVBackgroundLocation.stationaryRadius"
+#define kCDVBackgroundLocation_distanceFilter    @"CDVBackgroundLocation.distanceFilter"
+#define kCDVBackgroundLocation_locationTimeout   @"CDVBackgroundLocation.locationTimeout"
+#define kCDVBackgroundLocation_desiredAccuracy   @"CDVBackgroundLocation.desiredAccuracy"
+#define kCDVBackgroundLocation_isDebugging       @"CDVBackgroundLocation.isDebugging"
+#define kCDVBackgroundLocation_stopOnTerminate   @"CDVBackgroundLocation.stopOnTerminate"
+#define kCDVBackgroundLocation_interval          @"CDVBackgroundLocation.interval"
+    
+#define kCDVBackgroundLocation_serverUrl         @"CDVBackgroundLocation.serverUrl"
+#define kCDVBackgroundLocation_authToken         @"CDVBackgroundLocation.authToken"
+
+// Minimal pool interval in seconds
+#define MIN_POOL_INTERVAL  15
+
+
 @interface LocationTracker : NSObject <CLLocationManagerDelegate>
 
 @property (nonatomic,assign) NSTimeInterval serverInterval;
@@ -28,6 +44,7 @@
 
 
 + (CLLocationManager *)sharedLocationManager;
++ (CLLocationAccuracy)decodeDesiredAccuracy:(long)accuracy;
 
 - (void)startLocationTracking;
 - (void)stopLocationTracking;

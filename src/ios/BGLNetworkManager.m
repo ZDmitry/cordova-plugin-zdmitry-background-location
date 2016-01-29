@@ -15,15 +15,16 @@
 
 - (id)init {
     if (self = [super init]) {
-        _serverUrl   = @"";
-        _serverToken = nil;
+        _serverUrl    = @"";
+        _serverToken  = nil;
+        _useTimestamp = NO;
     }
     return self;
 }
 
 - (id) init:(NSString*)serverURL withToken:(NSString*)token
 {
-    if (self = [super init]) {
+    if (self = [self init]) {
         _serverUrl   = (serverURL ? serverURL : @"");
         _serverToken = token;
     }
@@ -49,6 +50,12 @@
     if (task) [task resume];
 }
 
+- (void) sendURLEncoded:(NSDictionary*)text withCompletion:(BGLDownloadComplete_block)block
+{
+    NSURLSessionDataTask* task = [self defferedSendURLEncoded:text withCompletion:block];
+    if (task) [task resume];
+}
+
 - (void) sendData:(NSData*)data withMimeType:(NSString*)mimeType withCompletion:(BGLDownloadComplete_block)block
 {
     NSURLSessionDataTask* task = [self defferedSendData:data withMimeType:mimeType withCompletion:block];
@@ -68,6 +75,15 @@
 {
     NSError*  error      = nil;
     NSString* jsonString = @"{ }";
+    NSMutableDictionary* jsonDict = [[NSMutableDictionary alloc] init];
+    
+    if (dict && dict.count > 0) {
+        jsonDict = [dict mutableCopy];
+    }
+    
+    if (_useTimestamp) {
+        [jsonDict setObject:[self datetimeISONow] forKey:@"timestamp"];
+    }
     
     NSData*   jsonData   = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
     
@@ -77,6 +93,26 @@
     
     return [self defferedSendData:[jsonString dataUsingEncoding:NSUTF8StringEncoding]
                      withMimeType:@"application/json"
+                   withCompletion:block];
+}
+
+- (NSURLSessionDataTask*) defferedSendURLEncoded:(NSDictionary*)dict withCompletion:(BGLDownloadComplete_block)block
+{
+    NSString* postParams  = @"";
+    NSMutableArray *pairs = [[NSMutableArray alloc] init];
+    
+    for(id key in dict) {
+        id obj = [dict objectForKey:key];
+        
+        NSString* strKey = [[NSString stringWithFormat: @"%@", key] stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
+        NSString* strObj = [[NSString stringWithFormat: @"%@", obj] stringByAddingPercentEscapesUsingEncoding: NSUTF8StringEncoding];
+        
+        [pairs addObject:[NSString stringWithFormat: @"%@=%@", strKey, strObj]];
+    }
+    
+    postParams = [pairs componentsJoinedByString:@"&"];
+    return [self defferedSendData:[postParams dataUsingEncoding:NSUTF8StringEncoding]
+                     withMimeType:@"application/x-www-form-urlencoded"
                    withCompletion:block];
 }
 
