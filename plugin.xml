@@ -14,11 +14,11 @@
         <engine name="cordova" version=">=3.0.0"/>
     </engines>
 
-    <platform name="ios">
-        <js-module src="www/backgroundLocation.js" name="backgroundLocation">
-            <clobbers target="cordova.plugins.backgroundLocation"/>
-        </js-module>
-        
+    <js-module src="www/backgroundLocation.js" name="backgroundLocation">
+        <clobbers target="cordova.plugins.backgroundLocation"/>
+    </js-module>
+
+    <platform name="ios">        
         <config-file target="*-Info.plist" parent="NSLocationAlwaysUsageDescription">
             <string>This app requires background location tracking</string>
         </config-file>
@@ -61,5 +61,28 @@
         <header-file src="src/ios/BGLNetworkManager.h" />
     </platform>
 
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="BackgroundLocation" >
+                <param name="android-package" value="com.cordova.zdmitry.backgroundlocation.BackgroundLocation"/>
+            </feature>
+        </config-file>
+
+        <!-- Extra permissions -->
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="com.cordova.zdmitry.backgroundlocation.BackgroundLocationService" />
+        </config-file>
+
+        <source-file src="src/android/MobileSilence.java" target-dir="src/com/cordova/zdmitry/mobilesilence" />
+        <source-file src="src/android/BackgroundLocation.java" target-dir="src/com/cordova/zdmitry/backgroundlocation" />
+        <source-file src="src/android/BackgroundLocationManager.java" target-dir="src/com/cordova/zdmitry/backgroundlocation" />
+        <source-file src="src/android/BackgroundLocationService.java" target-dir="src/com/cordova/zdmitry/backgroundlocation" />
+        <source-file src="src/android/NetworkManager.java" target-dir="src/com/cordova/zdmitry/backgroundlocation" />
+    </platform>
 
 </plugin>
