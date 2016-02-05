@@ -78,7 +78,6 @@
             <service android:name="com.cordova.zdmitry.backgroundlocation.BackgroundLocationService" />
         </config-file>
 
-        <source-file src="src/android/MobileSilence.java" target-dir="src/com/cordova/zdmitry/mobilesilence" />
         <source-file src="src/android/BackgroundLocation.java" target-dir="src/com/cordova/zdmitry/backgroundlocation" />
         <source-file src="src/android/BackgroundLocationManager.java" target-dir="src/com/cordova/zdmitry/backgroundlocation" />
         <source-file src="src/android/BackgroundLocationService.java" target-dir="src/com/cordova/zdmitry/backgroundlocation" />
