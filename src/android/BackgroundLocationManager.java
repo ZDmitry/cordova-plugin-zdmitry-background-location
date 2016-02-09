@@ -66,8 +66,8 @@ public class BackgroundLocationManager implements LocationListener {
         try {
             JSONObject obj = new JSONObject();
 
-            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmXXX");
-            String date = df.format(new java.util.Date(location.getTime()));
+            // DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmXXX");
+            // String date = df.format(new java.util.Date(location.getTime()));
 
             obj.put("accuracy", location.getAccuracy());
             obj.put("altitude", location.getAltitude());
@@ -75,13 +75,13 @@ public class BackgroundLocationManager implements LocationListener {
             obj.put("latitude", location.getLatitude());
             obj.put("bearing", location.getBearing());
             obj.put("speed", location.getSpeed());
-            obj.put("timestamp", date);
+            // obj.put("timestamp", date);
 
-            /* obj = new JSONObject();
+            obj = new JSONObject();
 
             obj.put("lat", location.getLongitude());
             obj.put("lng", location.getLatitude());
-            obj.put("createdAt", date); */
+            // obj.put("createdAt", date);
 
             netMan.sendDictionary(obj);
         } catch (Exception e) {

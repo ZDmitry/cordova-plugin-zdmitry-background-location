@@ -49,6 +49,16 @@
      _locationUpdateTimer = nil;
 }
 
+- (void) init:(CDVInvokedUrlCommand*)command
+{
+    NSDictionary* json = @{
+        @"method":  command.methodName,
+        @"success": @(true),
+    };
+
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:json];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
 
 - (void) configure:(CDVInvokedUrlCommand*)command
 {

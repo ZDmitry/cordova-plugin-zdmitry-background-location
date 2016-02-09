@@ -10,6 +10,9 @@ var backgroundLocation = {
 
     config: {},
 
+    init: function(success, failure) {
+      exec(success || function() {}, failure || function() {}, 'BackgroundLocation', 'init', []);
+    },
     configure: function(success, failure, config) {
         this.config = config || {};
         var stationaryRadius      = (config.stationaryRadius >= 0) ? config.stationaryRadius : 50,  // meters
