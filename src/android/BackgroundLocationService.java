@@ -87,7 +87,7 @@ public class BackgroundLocationService extends Service {
 
         // configure location service
         if (poolInterval > MIN_POOL_INTERVAL) {
-            mLocation.poolInterval = poolInterval;
+            mLocation.setPoolInterval(poolInterval);
         }
 
         mLocation.setLocationAccuracy(desiredAccuracy);

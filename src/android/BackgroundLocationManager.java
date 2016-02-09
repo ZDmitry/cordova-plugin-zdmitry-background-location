@@ -93,6 +93,10 @@ public class BackgroundLocationManager implements LocationListener {
         mLocationTimeout = seconds * 1000;
     }
 
+    public void setPoolInterval( long seconds ) {
+        poolInterval = seconds * 1000;
+    }
+
     public void setLocationAccuracy( long value ) {
         mLocationAccuracy = value; // BackgroundLocationManager.translateDesiredAccuracy((int)value);
     }
