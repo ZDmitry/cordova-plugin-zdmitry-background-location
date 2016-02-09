@@ -42,7 +42,6 @@ public class BackgroundLocationService extends Service {
 
     }
 
-    private static final Integer MIN_POOL_INTERVAL = 5 * 1000; // 5 seconds
     private Handler mHandler  = null;
 
     Runnable mStatusChecker = new Runnable() {
@@ -51,7 +50,7 @@ public class BackgroundLocationService extends Service {
             try {
                 updateLocation();
             } finally {
-                mHandler.postDelayed(mStatusChecker, MIN_POOL_INTERVAL);
+                mHandler.postDelayed(mStatusChecker, BackgroundLocationManager.MIN_POOL_INTERVAL);
             }
         }
     };
@@ -86,7 +85,7 @@ public class BackgroundLocationService extends Service {
         String serverToken = args.getString(8);
 
         // configure location service
-        if (poolInterval > MIN_POOL_INTERVAL) {
+        if (poolInterval > BackgroundLocationManager.MIN_POOL_INTERVAL) {
             mLocation.setPoolInterval(poolInterval);
         }
 

@@ -21,16 +21,19 @@ public class BackgroundLocationManager implements LocationListener {
     private long mLocationTimeout  = 1 * 60 * 1000; // 1 minute
     private long mLocationAccuracy = 200;
 
+    public  static final Integer MIN_POOL_INTERVAL = 5; // 5 seconds
+
     public  long distanceFilter    = (-1);
-    public  long poolInterval      = 0;
+    public  long poolInterval      = BackgroundLocationManager.MIN_POOL_INTERVAL;
     public  long stationaryRadius  = 0;
 
     public Boolean startPoolingLocation(LocationManager locationManager) {
+        if (poolInterval <= 0) return false;
         Boolean retVal = true;
 
         try {  // Register the listener with the Location Manager to receive location updates
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, poolInterval /* min pool time */, stationaryRadius /* accuracy */, this);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, poolInterval /* min pool time */, stationaryRadius /* accuracy */, this);
             mLocationMan = locationManager;
         } catch (SecurityException e) {
             retVal = false;
