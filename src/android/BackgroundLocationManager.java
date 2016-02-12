@@ -82,8 +82,8 @@ public class BackgroundLocationManager implements LocationListener {
 
             obj = new JSONObject();
 
-            obj.put("lat", location.getLongitude());
-            obj.put("lng", location.getLatitude());
+            obj.put("lat", location.getLatitude());
+            obj.put("lng", location.getLongitude());
             // obj.put("createdAt", date);
 
             netMan.sendDictionary(obj);
