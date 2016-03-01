@@ -40,6 +40,7 @@
         _logger.useTimestamp = YES;
         
         _cdvBackgroundLocation = [[CDVBackgroundLocation alloc] init];
+        [_cdvBackgroundLocation pluginInitialize];
     }
     return self;
 }

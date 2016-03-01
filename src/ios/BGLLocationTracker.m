@@ -39,9 +39,11 @@
             _locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters;
             _locationManager.distanceFilter  = kCLDistanceFilterNone;
             
+#ifdef __IPHONE_9_0
             if ([_locationManager respondsToSelector:@selector(setAllowsBackgroundLocationUpdates:)]) {
                 _locationManager.allowsBackgroundLocationUpdates = YES;
             }
+#endif
         }
     }
     return _locationManager;
