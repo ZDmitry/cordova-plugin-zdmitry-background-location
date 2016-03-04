@@ -384,49 +384,36 @@
 
 - (void) sendDefferedData
 {
-    NSMutableArray* defferedJob = [[NSMutableArray alloc] init];
+    if (![_defferedRequests count]) {
+        return;
+    }
+    
     BGLNetworkManager* logger   = [[BGLNetworkManager alloc] init:@"" withToken:nil];
     
+    NSDictionary* locationBulk = @{@"coordinates": _defferedRequests};
     
-    for(int i = 0; i < _defferedRequests.count; i++ ) {
-        NSDictionary* location = [_defferedRequests objectAtIndex:i];
-        NSURLSessionDataTask* task = [[BGLNetworkManager sharedInstance] defferedSendDictionary:location withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
-            if (data && !error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
-                NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-                formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
-                NSString* timeNow = [formatter stringFromDate:[NSDate date]];
-                
-                NSHTTPURLResponse* httpResp = (NSHTTPURLResponse*)response;
-                long statusCode = (httpResp ? httpResp.statusCode : (-1));
-                
-                NSString* respData = @"";
-                if (data && data.length > 0 && data.bytes ) {
-                    respData = [NSString stringWithUTF8String:data.bytes];
-                }
-                
-                /* [logger sendDictionary:@{
-                    @"defferedLocation":location,
-                              @"status": @"sent",
-                            @"response": @{
-                                @"data": respData,
-                                @"code": @(statusCode)
-                            },
-                           @"timestamp": timeNow } withCompletion:nil]; 
-                */
-                
-                [_defferedRequests removeObject:location];
+    NSURLSessionDataTask* task = [[BGLNetworkManager sharedInstance] defferedSendDictionary:locationBulk withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (data && !error) {
+            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+            formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
+            NSString* timeNow = [formatter stringFromDate:[NSDate date]];
+            
+            NSHTTPURLResponse* httpResp = (NSHTTPURLResponse*)response;
+            long statusCode = (httpResp ? httpResp.statusCode : (-1));
+            
+            NSString* respData = @"";
+            if (data && data.length > 0 && data.bytes ) {
+                respData = [NSString stringWithUTF8String:data.bytes];
             }
-        }];
-        if (task) [defferedJob addObject:task];
-    }
-    
-    for(int i = 0; i < defferedJob.count; i++ ) {
-        NSURLSessionDataTask* task = [defferedJob objectAtIndex:i];
+            
+            
+            [_defferedRequests removeAllObjects];
+        }
+    }];
+    if (task) {
         [task resume];
-    }
+    };
     
-    [defferedJob removeAllObjects];
-     defferedJob = nil;
 }
 
 #pragma mark -
