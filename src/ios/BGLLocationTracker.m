@@ -336,10 +336,21 @@
     
     NSLog(@"Send to Server: Latitude(%f) Longitude(%f) Accuracy(%f)",self.myLocation.latitude, self.myLocation.longitude,self.myLocationAccuracy);
     
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ssZ";
+    NSString* timestamp = [formatter stringFromDate:[NSDate date]];
+    
+    NSDictionary *dict = @{
+        @"lat": @(self.myLocation.latitude),
+        @"lng": @(self.myLocation.longitude),
+        @"createdAt": timestamp
+    };
+
+
     if (_serverEnabled) { //Send data to your server
-        [[BGLNetworkManager sharedInstance] sendDictionary:myBestLocation withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
+        [[BGLNetworkManager sharedInstance] sendDictionary:dict withCompletion:^(NSData *data, NSURLResponse *response, NSError *error) {
             if (error) { // error.domain == NSURLErrorDomain && error.code == NSURLErrorNotConnectedToInternet) {
-                [_defferedRequests addObject:myBestLocation];
+                [_defferedRequests addObject:dict];
             } else {
                 if (_defferedRequests.count > 0) {
                     [self sendDefferedData];
@@ -373,13 +384,13 @@
         @"longitude":        @(location.coordinate.longitude)
     };
     
-    NSDictionary* returnInfo = @{
-        @"lat": @(location.coordinate.latitude),
-        @"lng": @(location.coordinate.longitude),
-        @"createdAt": timestamp
-    };
+    // NSDictionary* returnInfo = @{
+    //     @"lat": @(location.coordinate.latitude),
+    //     @"lng": @(location.coordinate.longitude),
+    //     @"createdAt": timestamp
+    // };
     
-    return [returnInfo mutableCopy];
+    return [locationDict mutableCopy];
 }
 
 - (void) sendDefferedData
