@@ -121,7 +121,7 @@
     locationManager.delegate = self;
     
     if(IS_OS_8_OR_LATER) {
-        [locationManager requestAlwaysAuthorization];
+        [locationManager requestWhenInUseAuthorization];
     }
     [locationManager startUpdatingLocation];
     [locationManager startMonitoringSignificantLocationChanges];
@@ -144,7 +144,7 @@
     locationManager.delegate = self;
     
     if(IS_OS_8_OR_LATER) {
-        [locationManager requestAlwaysAuthorization];
+        [locationManager requestWhenInUseAuthorization];
     }
     
     [locationManager startUpdatingLocation];
@@ -170,7 +170,7 @@
             locationManager.delegate = self;
             
             if(IS_OS_8_OR_LATER) {
-              [locationManager requestAlwaysAuthorization];
+              [locationManager requestWhenInUseAuthorization];
             }
             
             [locationManager startUpdatingLocation];
