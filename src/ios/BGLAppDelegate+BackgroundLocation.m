@@ -77,10 +77,10 @@
 }
 
 - (BOOL)_application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
-{
-    BGLAppDelegate_p* _pimpl = [BGLAppDelegate_p sharendInst];
-    
+{    
     if ([launchOptions objectForKey:UIApplicationLaunchOptionsLocationKey]) {
+        BGLAppDelegate_p* _pimpl = [BGLAppDelegate_p sharendInst];
+        
         [_pimpl log:@{ @"action": @"application:didFinishLaunchingWithOptions:", @"reason": @"UIApplicationLaunchOptionsLocationKey" }];
         [_pimpl startPoolingLocation];
     }
